@@ -1,0 +1,400 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Teia de Conexões - Organizações Criminosas</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        svg {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 100;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .tooltip strong {
+            color: #ffd700;
+        }
+        
+        .legenda {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 12px;
+            z-index: 200;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-family: monospace;
+            min-width: 180px;
+        }
+        
+        .legenda h4 {
+            margin-bottom: 10px;
+            color: #ffd700;
+            font-size: 14px;
+        }
+        
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legenda-cor {
+            width: 20px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        
+        .legenda-bolinha {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .legenda-bolinha.verde {
+            background: #4CAF50;
+            border: 1px solid white;
+        }
+        
+        .legenda-bolinha.laranja {
+            background: #FF9800;
+            border: 1px solid white;
+        }
+        
+        .legenda-bolinha.cinza {
+            background: #9E9E9E;
+            border: 1px solid white;
+        }
+        
+        .legenda-bolinha.azul {
+            background: #2196F3;
+            border: 1px solid white;
+        }
+        
+        .info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 200;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-weight: bold;
+        }
+        
+        .info span {
+            color: #ffd700;
+        }
+        
+        @media (max-width: 768px) {
+            .legenda {
+                font-size: 10px;
+                padding: 10px;
+                min-width: 140px;
+            }
+            .info {
+                font-size: 10px;
+                top: 10px;
+                left: 10px;
+            }
+        }
+        
+        .controles {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 200;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div class="info">
+            🕸️ TEIA DE CONEXÕES | <span>32 organizações</span> | <span>1 conexões</span>
+        </div>
+        <div class="legenda">
+            <h4>📖 LEGENDA</h4>
+            <div class="legenda-item">
+                <div class="legenda-bolinha verde"></div>
+                <span>Ativa</span>
+            </div>
+            <div class="legenda-item">
+                <div class="legenda-bolinha laranja"></div>
+                <span>Em Decadência</span>
+            </div>
+            <div class="legenda-item">
+                <div class="legenda-bolinha cinza"></div>
+                <span>Extinta</span>
+            </div>
+            <div class="legenda-item">
+                <div class="legenda-bolinha azul"></div>
+                <span>Sem Informação</span>
+            </div>
+            <div class="legenda-item" style="margin-top: 10px;">
+                <div class="legenda-cor" style="background: #4CAF50; height: 3px;"></div>
+                <span>──── Aliados</span>
+            </div>
+            <div class="legenda-item">
+                <div class="legenda-cor" style="background: #F44336; height: 3px;"></div>
+                <span>──── Inimigos</span>
+            </div>
+            <div class="legenda-item" style="margin-top: 10px;">
+                <span>⚫ Tamanho da bolinha = Influência</span>
+            </div>
+        </div>
+        <div class="controles">
+            <button onclick="reiniciarLayout()">🔄 Reiniciar</button>
+            <button onclick="centralizar()">🎯 Centralizar</button>
+        </div>
+    </div>
+
+    <script>
+        // Dados
+        const nodesData = [{"id": "Comando Vermelho - CV", "nome": "Comando Vermelho - CV", "influencia": 10.0, "situacao": "Ativa", "classe": "Facção", "regiao": "Todas", "cor": "#4CAF50", "tamanho": 70.0}, {"id": "Primeiro Comando da Capital - PCC", "nome": "Primeiro Comando da Capital - PCC", "influencia": 10.0, "situacao": "Ativa", "classe": "Facção", "regiao": "Todas", "cor": "#4CAF50", "tamanho": 70.0}, {"id": "300 Espartanos", "nome": "300 Espartanos", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Amigos Leais", "nome": "Amigos Leais", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "Amigos Para Sempre - APS", "nome": "Amigos Para Sempre - APS", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "Bonde dos 13", "nome": "Bonde dos 13", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "Bonde dos 30", "nome": "Bonde dos 30", "influencia": 2.0, "situacao": "Em Decadência", "classe": "Gangue", "regiao": "Norte", "cor": "#FF9800", "tamanho": 30.0}, {"id": "Bonde dos 777", "nome": "Bonde dos 777", "influencia": 1.5, "situacao": "Ativa", "classe": "Bando", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 27.5}, {"id": "Bonde do Cangaço", "nome": "Bonde do Cangaço", "influencia": 3.0, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 35.0}, {"id": "Cartel do Norte - CDN", "nome": "Cartel do Norte - CDN", "influencia": 2.0, "situacao": "Em Decadência", "classe": "Gangue", "regiao": "Norte", "cor": "#FF9800", "tamanho": 30.0}, {"id": "Comando Classe A", "nome": "Comando Classe A", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "Comando Norte-Nordeste - CNN", "nome": "Comando Norte-Nordeste - CNN", "influencia": 0.0, "situacao": "Extinta", "classe": "Bando", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Crias da Tríplice/Os Crias", "nome": "Crias da Tríplice/Os Crias", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Crime Popular - CP", "nome": "Crime Popular - CP", "influencia": 0.5, "situacao": "Em Decadência", "classe": "Bando", "regiao": "Norte", "cor": "#FF9800", "tamanho": 22.5}, {"id": "Equipe REAL", "nome": "Equipe REAL", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Equipe Rex", "nome": "Equipe Rex", "influencia": 0.0, "situacao": "Extinta", "classe": "Bando", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Estado Maior Central - EMC", "nome": "Estado Maior Central - EMC", "influencia": 2.5, "situacao": "Ativa", "classe": "Fronteira", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 32.5}, {"id": "Ex-FARC Acácio Medina", "nome": "Ex-FARC Acácio Medina", "influencia": 2.5, "situacao": "Ativa", "classe": "Fronteira", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 32.5}, {"id": "Família do Norte - FDN", "nome": "Família do Norte - FDN", "influencia": 0.0, "situacao": "Extinta", "classe": "Facção", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Família Terror do Amapá - FTA", "nome": "Família Terror do Amapá - FTA", "influencia": 7.5, "situacao": "Ativa", "classe": "Facção", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 57.5}, {"id": "Gangue da Ponte - GDA", "nome": "Gangue da Ponte - GDA", "influencia": 2.0, "situacao": "Em Decadência", "classe": "Gangue", "regiao": "Norte", "cor": "#FF9800", "tamanho": 30.0}, {"id": "Irmandade Força Ativa Revolucionária Acreana - IFARA", "nome": "Irmandade Força Ativa Revolucionária Acreana - IFARA", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Irmãos de Farda", "nome": "Irmãos de Farda", "influencia": 0.0, "situacao": "Extinta", "classe": "Milícia", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Piratas do Marajó", "nome": "Piratas do Marajó", "influencia": 0.0, "situacao": "Extinta", "classe": "Bando", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Piratas do Solimões", "nome": "Piratas do Solimões", "influencia": 3.0, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 35.0}, {"id": "Primeiro Comando da Mariola", "nome": "Primeiro Comando da Mariola", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Primeiro Comando do Panda", "nome": "Primeiro Comando do Panda", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "Revolucionários do Amazonas", "nome": "Revolucionários do Amazonas", "influencia": 0.0, "situacao": "Extinta", "classe": "Gangue", "regiao": "Norte", "cor": "#9E9E9E", "tamanho": 20.0}, {"id": "Tren de Aragua", "nome": "Tren de Aragua", "influencia": 4.5, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 42.5}, {"id": "Tropa da Revolução - TDR", "nome": "Tropa da Revolução - TDR", "influencia": 2.6, "situacao": "Em Decadência", "classe": "Gangue", "regiao": "Norte", "cor": "#FF9800", "tamanho": 33.0}, {"id": "União Criminosa do Amapá - UCA", "nome": "União Criminosa do Amapá - UCA", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}, {"id": "União do Norte", "nome": "União do Norte", "influencia": 3.6, "situacao": "Ativa", "classe": "Gangue", "regiao": "Norte", "cor": "#4CAF50", "tamanho": 38.0}];
+        const linksData = [{"source": "Equipe Rex", "target": "Irmãos de Farda", "tipo": "inimigo", "cor": "#F44336"}];
+        
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let svg, simulation, g;
+        
+        function init() {
+            // Criar SVG
+            svg = d3.select("#container")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .call(d3.zoom().on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                }))
+                .append("g");
+            
+            g = svg.append("g");
+            
+            // Criar simulação de força
+            simulation = d3.forceSimulation(nodesData)
+                .force("link", d3.forceLink(linksData).id(d => d.id).distance(150).strength(0.5))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collision", d3.forceCollide().radius(d => d.tamanho / 2 + 10));
+            
+            // Desenhar links (linhas)
+            const link = g.append("g")
+                .selectAll("line")
+                .data(linksData)
+                .enter()
+                .append("line")
+                .attr("stroke", d => d.cor)
+                .attr("stroke-width", 2)
+                .attr("stroke-opacity", 0.6)
+                .attr("stroke-dasharray", d => d.tipo === 'inimigo' ? "5,5" : "none");
+            
+            // Desenhar nós (bolinhas)
+            const node = g.append("g")
+                .selectAll("circle")
+                .data(nodesData)
+                .enter()
+                .append("circle")
+                .attr("r", d => d.tamanho / 2)
+                .attr("fill", d => d.cor)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .attr("cursor", "pointer")
+                .call(drag(simulation));
+            
+            // Adicionar labels (nomes)
+            const label = g.append("g")
+                .selectAll("text")
+                .data(nodesData)
+                .enter()
+                .append("text")
+                .text(d => {
+                    let nome = d.nome;
+                    if (nome.length > 25) nome = nome.substring(0, 22) + '...';
+                    return nome;
+                })
+                .attr("font-size", "10px")
+                .attr("font-weight", "bold")
+                .attr("text-anchor", "middle")
+                .attr("dy", d => -(d.tamanho / 2 + 5))
+                .attr("fill", "#333")
+                .attr("pointer-events", "none");
+            
+            // Tooltip
+            const tooltip = d3.select("body")
+                .append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+            
+            // Eventos dos nós
+            node.on("mouseover", function(event, d) {
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", .95);
+                tooltip.html(`
+                    <strong>${d.nome}</strong><br/>
+                    🟢 Situação: ${d.situacao}<br/>
+                    📊 Influência: ${d.influencia}/10<br/>
+                    🏷️ Classe: ${d.classe}<br/>
+                    🌎 Região: ${d.regiao}
+                `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+                
+                d3.select(this).attr("stroke", "#ffd700").attr("stroke-width", 3);
+            })
+            .on("mouseout", function(d) {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+                d3.select(this).attr("stroke", "#fff").attr("stroke-width", 2);
+            });
+            
+            // Atualizar posições na simulação
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+                
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+                
+                label
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            });
+        }
+        
+        function drag(simulation) {
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+            
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+            
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+            
+            return d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+        
+        function reiniciarLayout() {
+            simulation.alpha(1).restart();
+            nodesData.forEach(node => {
+                node.fx = null;
+                node.fy = null;
+            });
+        }
+        
+        function centralizar() {
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const avgX = nodesData.reduce((sum, n) => sum + n.x, 0) / nodesData.length;
+            const avgY = nodesData.reduce((sum, n) => sum + n.y, 0) / nodesData.length;
+            const dx = centerX - avgX;
+            const dy = centerY - avgY;
+            nodesData.forEach(node => {
+                node.x += dx;
+                node.y += dy;
+            });
+            simulation.alpha(0.1).restart();
+        }
+        
+        // Redimensionar com a janela
+        window.addEventListener('resize', () => {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            svg.attr("width", width).attr("height", height);
+            simulation.force("center", d3.forceCenter(width / 2, height / 2));
+            simulation.alpha(0.3).restart();
+        });
+        
+        // Iniciar
+        init();
+    </script>
+</body>
+</html>
